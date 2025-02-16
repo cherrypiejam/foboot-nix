@@ -1,0 +1,78 @@
+From 199389592e85705bd9fe89ef47c6eb452416bc54 Mon Sep 17 00:00:00 2001
+From: Gongqi Huang <gongqih@hotmail.com>
+Date: Sat, 15 Feb 2025 19:39:46 -0500
+Subject: [PATCH] Fix builds
+
+---
+ hw/lxbuildenv.py |  4 ++--
+ sw/Makefile      | 10 +++++-----
+ sw/ld/linker.ld  |  2 +-
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/hw/lxbuildenv.py b/hw/lxbuildenv.py
+index 88dbc78..76bc4ed 100755
+--- a/hw/lxbuildenv.py
++++ b/hw/lxbuildenv.py
+@@ -189,11 +189,11 @@ def check_make(args):
+     return check_cmd(args, "make", "GNU Make")
+ 
+ def check_riscv(args):
+-    riscv64 = check_cmd(args, "riscv64-unknown-elf-gcc", "riscv toolchain", "download it from https://www.sifive.com/boards/")
++    riscv64 = check_cmd(args, "riscv64-none-elf-gcc", "riscv toolchain", "download it from https://www.sifive.com/boards/")
+     if riscv64[0] == True:
+         return riscv64
+ 
+-    riscv32 = check_cmd(args, "riscv32-unknown-elf-gcc", "riscv toolchain", "download it from https://www.sifive.com/boards/")
++    riscv32 = check_cmd(args, "riscv32-none-elf-gcc", "riscv toolchain", "download it from https://www.sifive.com/boards/")
+     if riscv32[0] == True:
+         return riscv32
+ 
+diff --git a/sw/Makefile b/sw/Makefile
+index 1c86a5b..e6b9081 100644
+--- a/sw/Makefile
++++ b/sw/Makefile
+@@ -1,10 +1,10 @@
+ GIT_VERSION := $(shell git describe --tags)
+ 
+ # Earlier versions of the Raspberry Pi image only had riscv32-gcc
+-ifneq (,$(wildcard /usr/bin/riscv32-unknown-elf-gcc))
+-TRGT       ?= riscv32-unknown-elf-
++ifneq (,$(wildcard /usr/bin/riscv32-none-elf-gcc))
++TRGT       ?= riscv32-none-elf-
+ else
+-TRGT       ?= riscv64-unknown-elf-
++TRGT       ?= riscv64-none-elf-
+ endif
+ 
+ CC         := $(TRGT)gcc
+@@ -55,12 +55,12 @@ THIRD_PARTY := $(BASE_DIR)/third_party
+ DBG_CFLAGS := -ggdb3 -DDEBUG -Wall
+ DBG_LFLAGS := -ggdb3 -Wall
+ CFLAGS     := $(ADD_CFLAGS) \
+-			  -D__vexriscv__ -march=rv32i  -mabi=ilp32 \
++			  -D__vexriscv__ -march=rv32i_zicsr  -mabi=ilp32 \
+ 			  -Wall -Wextra \
+ 			  -flto \
+ 			  -ffunction-sections -fdata-sections -fno-common \
+ 			  -fomit-frame-pointer -Os \
+-			  -march=rv32i \
++			  -march=rv32i_zicsr_zifencei \
+ 			  -DGIT_VERSION=u\"$(GIT_VERSION)\" -std=gnu11
+ CXXFLAGS   := $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions
+ LFLAGS     := $(CFLAGS) $(ADD_LFLAGS) -L$(LD_DIR) \
+diff --git a/sw/ld/linker.ld b/sw/ld/linker.ld
+index aa2c483..b86d2d8 100644
+--- a/sw/ld/linker.ld
++++ b/sw/ld/linker.ld
+@@ -19,7 +19,7 @@ SECTIONS
+ 		_frodata = .;
+ 		*(.rodata .rodata.* .gnu.linkonce.r.*)
+ 		*(.rodata1)
+-		*(.srodata)
++		*(.srodata .srodata.*)
+ 		_erodata = .;
+ 	} > rom
+ 
+-- 
+2.47.2
+
