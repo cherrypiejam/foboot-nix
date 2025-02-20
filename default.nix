@@ -32,6 +32,7 @@ pkgs.stdenv.mkDerivation {
 
   patchPhase = ''
     patch -p1 < ${./patches/foboot-0001-fix-builds.patch}
+    patch -p1 < ${./patches/foboot-0002-example-blink-fix-builds.patch}
 
     pushd hw/deps/litex/
     patch -p1 < ${./patches/litex-0001-soc-cores-spi-fix-index-error.patch}
@@ -39,6 +40,12 @@ pkgs.stdenv.mkDerivation {
   '';
 
   buildPhase = ''
+    # Building example
+    pushd examples/riscv-blink
+    make
+    popd
+
+    # Building Bootloader
     pushd hw
   '' + (if seed != null then ''
     python3 ./foboot-bitstream.py --revision hacker --seed ${builtins.toString seed}
@@ -56,7 +63,9 @@ pkgs.stdenv.mkDerivation {
   '';
 
   installPhase = ''
-    cp -r hw/build $out
+    mkdir -p $out/examples
+    mv examples/riscv-blink/riscv-blink* $out/examples
+    mv hw/build/* $out/
   '';
 
 }
